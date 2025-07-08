@@ -678,31 +678,58 @@ $(document).ready(function () {
         $('#shopFilters').toggleClass('active');
     });
 
-    $("#priceRange").ionRangeSlider({
-        type: "double",
-        min: 0,
-        max: 810,
-        from: 0,
-        to: 810,
-        grid: false,
-        prefix: "$",
-        skin: "round", // nice rounded handles
-        onChange: function (data) {
-            // Update display values
-            $("#minPriceVal").text(data.from_pretty);
-            $("#maxPriceVal").text(data.to_pretty);
-        }
+    $(function () {
+        $("#priceRange").ionRangeSlider({
+            type: "double",
+            min: 0,
+            max: 150,
+            from: 0,
+            to: 150,
+            grid: false,
+            prefix: "$",
+            skin: "round",
+            onChange: function (data) {
+                $("#minPriceVal").text(`$${data.from}`);
+                $("#maxPriceVal").text(`$${data.to}`);
+
+                $(".shop-card").each(function () {
+                    const price = parseFloat($(this).data("price"));
+                    if (price >= data.from && price <= data.to) {
+                        $(this).show();
+                    } else {
+                        $(this).hide();
+                    }
+                });
+            }
+        });
+
+        const slider = $("#priceRange").data("ionRangeSlider");
+        const initialFrom = slider.result.from;
+        const initialTo = slider.result.to;
+
+        $(".shop-card").each(function () {
+            const price = parseFloat($(this).data("price"));
+            if (price >= initialFrom && price <= initialTo) {
+                $(this).show();
+            } else {
+                $(this).hide();
+            }
+        });
     });
 
     // Clear filters
     $('#clearFiltersBtn').on('click', function () {
-        $('#filterPerfume').prop('checked', false);
+        // Reset categories
+        $('.category-filter').prop('checked', true);
 
-        var sliderInstance = $("#priceRange").data("ionRangeSlider");
-        sliderInstance.reset();
+        // Reset price range
+        const slider = $('#priceRange').data('ionRangeSlider');
+        slider.reset();
 
-        $('#minPriceVal').text(`$${sliderInstance.result.min}`);
-        $('#maxPriceVal').text(`$${sliderInstance.result.max}`);
+        $('#minPriceVal').text('$0');
+        $('#maxPriceVal').text('$150');
+
+        applyFilters();
     });
 
     $(document).off('click', '.shop-card').on('click', '.shop-card', function () {
@@ -761,26 +788,123 @@ $(document).ready(function () {
     });
 
     $(document).off('click', '.wishlist-icon').on('click', '.wishlist-icon', function (e) {
-        e.stopPropagation(); // <-- prevents parent click event
+        e.stopPropagation(); // Stop parent click
 
-        if (window.isLoggedIn === "true") {
-            // Toggle icon
-            const $icon = $(this);
-            if ($icon.hasClass('fas')) {
-                $icon.removeClass('fas').addClass('far');
-            } else {
-                $icon.removeClass('far').addClass('fas');
-            }
-            console.log("Added to wishlist!");
-        } else {
+        if (window.isLoggedIn !== "true") {
             e.preventDefault();
             const $msgContainer = $(this).closest('.shop-card, .detail').find('.action-message');
             $msgContainer.html('<p class="login-warning">Please login to add to wishlist.</p>');
-            // Hide after 3 seconds
-            setTimeout(() => {
-                $msgContainer.empty();
-            }, 5000);
+            return;
         }
+
+        const $icon = $(this);
+        const $card = $icon.closest('.shop-card, .item');
+        const productId = $card.length
+            ? $card.data('id')
+            : $icon.parent('[data-id]').data('id');
+
+        // Determine if adding or removing
+        const isAdding = !$icon.hasClass('fas');
+
+        if (!isAdding) {
+            // Just open wishlist section instead of removing
+            $('#slider-section, #about-section, #category-section, #perfumeCarouselSection, #contact-section, #shop-section, #search-section').hide();
+            $('#wishlist-section').show();
+
+            // Scroll to top for better UX
+            $('html, body').animate({ scrollTop: 0 }, 400);
+
+            return;
+        }
+
+        // Toggle icon visually
+        $icon.removeClass('far').addClass('fas');
+
+        // Ajax to backend to store
+        $.ajax({
+            url: '/wishlist',
+            type: 'POST',
+            data: {
+                product_id: productId,
+                _token: $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function (response) {
+                console.log('Wishlist updated', response);
+
+                // Update all icons
+                $('.wishlist-icon').each(function () {
+                    let iconProductId = null;
+                    const card = $(this).closest('.shop-card, .item');
+                    if (card.length) {
+                        iconProductId = card.data('id');
+                    } else {
+                        iconProductId = $(this).parent('[data-id]').data('id');
+                    }
+                    if (parseInt(iconProductId) === parseInt(productId)) {
+                        $(this).removeClass('far').addClass('fas');
+                    }
+                });
+
+                // If wishlist section is visible, reload it
+                $('#wishlist-items').load('/wishlist #wishlist-items > *');
+            },
+            error: function () {
+                alert('Error adding to wishlist.');
+            }
+        });
+    });
+
+    // Handle remove wishlist
+    $(document).off('click', '.remove-wishlist-btn').on('click', '.remove-wishlist-btn', function (e) {
+        e.preventDefault();
+        const $btn = $(this);
+        const productId = $btn.data('id');
+        console.log("Deleting wishlist item:", productId);
+
+        if (!productId) {
+            alert('Error: Product ID not found.');
+            return;
+        }
+
+        $.ajax({
+            url: `/wishlist/${productId}`,
+            type: 'POST',
+            data: {
+                _method: 'DELETE',
+                _token: $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function (response) {
+                console.log('Wishlist item removed');
+
+                // Remove the card smoothly
+                $btn.closest('.wishlist-card').fadeOut(300, function () {
+                    $(this).remove();
+
+                    // If no items left, show message
+                    if ($('.wishlist-card').length === 0) {
+                        $('#wishlist-items').html('<p>You have no items in your wishlist.</p>');
+                    }
+                });
+
+                // Update all wishlist icons globally to "far"
+                $('.wishlist-icon').each(function () {
+                    let iconProductId = null;
+                    const $card = $(this).closest('.shop-card, .item');
+                    if ($card.length) {
+                        iconProductId = $card.data('id');
+                    } else {
+                        iconProductId = $(this).parent('[data-id]').data('id');
+                    }
+
+                    if (parseInt(iconProductId) === parseInt(productId)) {
+                        $(this).removeClass('fas').addClass('far');
+                    }
+                });
+            },
+            error: function () {
+                alert('Error removing item.');
+            }
+        });
     });
 
     // Add to Cart click
@@ -811,6 +935,51 @@ $(document).ready(function () {
         }, 5000);
     });
 
+    // Show Wishlist Section
+    $(document).on('click', '.open-wishlist', function () {
+        $('html, body').animate({ scrollTop: 0 }, 400);
+        // Hide all other sections
+        $('#slider-section, #about-section, #category-section, #perfumeCarouselSection, #shop-section, #contact-section, #search-section').hide();
+        // Show wishlist
+        $('#wishlist-section').show();
+
+        // Hide top bar and shrink header
+        $('#topBar').slideUp(200);
+        $('#header').css('top', '0');
+        $('#mobile-header').css('top', '0');
+        $('#logo').addClass('shrink');
+    });
+
+    // Example Close Wishlist (if you want to add a close button later)
+    $(document).on('click', '#closeWishlistBtn', function () {
+        $('#wishlist-section').hide();
+        $('#slider-section, #about-section, #category-section, #contact-section').show();
+        $('#topBar').slideDown(200);
+        $('#header').css('top', '50px');
+        $('#mobile-header').css('top', '50px');
+        $('#logo').removeClass('shrink');
+    });
+
+    // Sort products
+    $('#sortProducts').on('change', function () {
+        const sortBy = $(this).val();
+        const $cards = $('.shop-products .shop-card');
+
+        const sorted = $cards.get().sort(function (a, b) {
+            const priceA = parseFloat($(a).data('price'));
+            const priceB = parseFloat($(b).data('price'));
+            if (sortBy === 'low-high') {
+                return priceA - priceB;
+            } else if (sortBy === 'high-low') {
+                return priceB - priceA;
+            } else {
+                return 0;
+            }
+        });
+
+        $('.shop-products').html(sorted);
+    });
+
 });
 
 function adjustSliderHeight() {
@@ -831,3 +1000,38 @@ function scrollToSection(targetId, offset = 60) {
         $('html, body').animate({ scrollTop: targetOffset }, 400);
     }
 }
+
+function applyFilters() {
+    const activeCategories = $('.category-filter:checked').map(function () {
+        return $(this).val();
+    }).get();
+
+    const minPrice = parseFloat($('#minPriceVal').text().replace('$', ''));
+    const maxPrice = parseFloat($('#maxPriceVal').text().replace('$', ''));
+
+    $('.shop-products .shop-card').each(function () {
+        const $card = $(this);
+        const category = $card.data('category');
+        const price = parseFloat($card.data('price'));
+
+        const categoryMatch = activeCategories.includes(category);
+        const priceMatch = price >= minPrice && price <= maxPrice;
+
+        if (categoryMatch && priceMatch) {
+            $card.show();
+        } else {
+            $card.hide();
+        }
+    });
+}
+
+// Category change
+$('.category-filter').on('change', applyFilters);
+
+// Price slider (assuming you’re using ionRangeSlider)
+$('#priceRange').on('change', function (e) {
+    const data = $(this).data('ionRangeSlider');
+    $('#minPriceVal').text(`$${data.from}`);
+    $('#maxPriceVal').text(`$${data.to}`);
+    applyFilters();
+});

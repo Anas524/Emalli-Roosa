@@ -11,7 +11,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.0/nouislider.min.css" integrity="sha512-wG1p0UZ8Sn1oFBsvtGgu/6o5gK9j4NxHLGEwB2R95ZMQlFQAKq2Rmc9pYAbfzVgAhbji3r6XZQ3puH+TH0wEHw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="logout-url" content="{{ route('logout') }}">
@@ -59,7 +58,7 @@
                 <i class="fas fa-search"></i>
                 <span>Search</span>
             </div>
-            <div class="icon-with-label">
+            <div class="icon-with-label open-wishlist">
                 <i class="far fa-heart"></i>
                 <span>Wishlist</span>
             </div>
@@ -103,7 +102,7 @@
                 <a href="#"><i class="fas fa-blog"></i> Blog</a>
                 <a href="#" class="nav-link" data-target="about-section"><i class="fas fa-users"></i> About Us</a>
                 <a href="#" class="nav-link" data-target="contact-section"><i class="fas fa-envelope"></i> Contact</a>
-                <a href="#"><i class="far fa-heart"></i> Wishlist</a>
+                <a href="#" class="open-wishlist"><i class="far fa-heart"></i> Wishlist</a>
                 @if(Auth::check())
                 <a href="#" class="account-trigger-mobile"><i class="fas fa-user"></i> Welcome, {{ Auth::user()->name }}</a>
                 @else
@@ -184,7 +183,7 @@
             <div class="category-card" id="perfumeCard">
                 <img src="{{ asset('images/perfume catogory img with bg.png') }}" alt="Perfumes">
                 <h3 class="category-name">PERFUMES</h3>
-                <p class="product-count">3 products</p>
+                <p class="product-count">{{ $categoryCounts['perfume'] ?? 0 }} products</p>
             </div>
 
             <!-- Gents Shoes -->
@@ -224,7 +223,7 @@
         <div class="list">
             @foreach ($products as $product)
             @if ($product->category === 'perfume')
-            <div class="item" data-key="{{ $product->slug }}">
+            <div class="item" data-id="{{ $product->id }}" data-key="{{ $product->slug }}">
                 <img src="/{{ $product->image }}" alt="{{ $product->name }}">
                 <div class="introduce">
                     <div class="title">{{ ucfirst($product->category) }}</div>
@@ -260,8 +259,8 @@
                         </div>
                     </div>
                     <div class="checkout">
-                        <button class="wishlist-btn">
-                            <i class="far fa-heart wishlist-icon"></i>
+                        <button class="wishlist-btn" data-id="{{ $product->id }}">
+                            <i class="{{ in_array($product->id, $wishlistIds) ? 'fas' : 'far' }} fa-heart wishlist-icon"></i>
                         </button>
                         <button class="add-to-cart-btn">ADD TO CART</button>
                         <button class="quick-buy-btn">QUICK BUY</button>
@@ -360,6 +359,10 @@
         @include('shop')
     </section>
 
+    <section id="wishlist-section" style="display: none;">
+        @include('wishlist')
+    </section>
+
     <footer class="emalli-footer">
         <div class="footer-content">
             <!-- Left Side -->
@@ -424,7 +427,7 @@
 
     <div class="mobile-bottom-tab">
         <a href="#" class="nav-link" data-target="shop-section"><i class="fas fa-store"></i><span>Shop</span></a>
-        <a href="#"><i class="far fa-heart"></i><span>Wishlist</span></a>
+        <a href="#" class="open-wishlist"><i class="far fa-heart"></i><span>Wishlist</span></a>
         <a href="#"><i class="fas fa-shopping-cart"></i><span>Cart</span></a>
         @if(Auth::check())
         <a href="#" class="account-trigger-mobile"><i class="far fa-user"></i><span>{{ Auth::user()->name }}</span></a>
@@ -604,7 +607,6 @@
     </script>
 
     <script src="{{ asset('script.js') }}"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.0/nouislider.min.js" integrity="sha512-rqFfHGVm2Y3qf2Eu2wPb6gm65dxa4sx7xvHa4DKm8YI0B1oMy5SOZTXotM2Ma6Hg8uQ3ydGydanDnxaYfCD5uA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script>
         window.isLoggedIn = "{{ auth()->check() ? 'true' : 'false' }}";
     </script>

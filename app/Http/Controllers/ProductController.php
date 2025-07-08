@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\Wishlist;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class ProductController extends Controller
 {
@@ -37,6 +40,21 @@ class ProductController extends Controller
     public function showEmalliPage()
     {
         $products = Product::with('perfumeDetail')->get();
-        return view('emalli', compact('products'));
+
+        // Get category counts using DB Facade
+        $categoryCounts = DB::table('products')
+            ->select('category', DB::raw('count(*) as total'))
+            ->groupBy('category')
+            ->pluck('total', 'category');
+
+        if (Auth::check()) {
+            $wishlist = Wishlist::where('user_id', Auth::id())->with('product')->get();
+            $wishlistIds = $wishlist->pluck('product_id')->toArray();
+        } else {
+            $wishlist = collect();
+            $wishlistIds = [];
+        }
+
+        return view('emalli', compact('products', 'wishlist', 'wishlistIds', 'categoryCounts'));
     }
 }

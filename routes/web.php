@@ -12,6 +12,7 @@ use App\Http\Controllers\AdminController;
 use App\Models\Newsletter;
 use App\Models\Contact;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\WishlistController;
 
 Route::get('/', [ProductController::class, 'showEmalliPage'])->name('home');
 
@@ -107,3 +108,9 @@ Route::post('/contact-submit', function (Request $request) {
 })->name('contact.submit');
 
 Route::get('/search-products', [ProductController::class, 'search']);
+
+Route::middleware('auth')->group(function () {
+    Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist');
+    Route::post('/wishlist', [WishlistController::class, 'store'])->name('wishlist.store');
+    Route::delete('/wishlist/{id}', [WishlistController::class, 'destroy'])->name('wishlist.destroy');
+});

@@ -1920,6 +1920,7 @@ body {
 .shop-body {
     display: flex;
     flex-wrap: wrap;
+    align-items: flex-start;
     gap: 40px;
 }
 
@@ -1932,11 +1933,15 @@ body {
     overflow: hidden;
     opacity: 0;
     transform: translateX(-30px);
+    padding: 0;
+    border-right: none;
     transition:
         flex-basis 0.3s ease,
         max-width 0.3s ease,
         opacity 0.3s ease,
-        transform 0.3s ease;
+        transform 0.3s ease,
+        padding 0.3s ease,
+        border 0.3s ease;
 }
 
 .shop-filters.active {
@@ -1944,6 +1949,8 @@ body {
     max-width: 335px;
     opacity: 1;
     transform: translateX(0);
+    padding: 20px 25px;
+    border-right: 1px solid #ddd;
 }
 
 .shop-filters h3 {
@@ -2171,7 +2178,112 @@ body {
 }
 
 .login-warning {
-  color: #c28377;
-  font-size: 14px;
-  margin-top: 5px;
+    color: #c28377;
+    font-size: 14px;
+    margin-top: 5px;
+}
+
+/* WISHLIST SECTION */
+#wishlist-section {
+    background: #fff;
+    color: #333;
+    padding: 40px 20px;
+    max-width: 1200px;
+    margin: 35px auto;
+}
+
+#wishlist-section h2 {
+    font-size: 28px;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
+.wishlist-products {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 25px;
+}
+
+.wishlist-card {
+    background: #fefefe;
+    border: 1px solid #eee;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease;
+    position: relative;
+}
+
+.wishlist-card:hover {
+    transform: scale(1.03);
+}
+
+.wishlist-card img {
+    width: 100%;
+    height: 260px;
+    object-fit: contain;
+    padding: 15px;
+}
+
+.wishlist-info {
+    padding: 15px;
+    text-align: left;
+}
+
+.wishlist-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.wishlist-title h4 {
+    font-size: 16px;
+    margin: 0;
+}
+
+.remove-wishlist-btn {
+    background: none;
+    border: none;
+    color: #c28377;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.wishlist-info p {
+    font-size: 13px;
+    margin: 8px 0;
+    color: #666;
+}
+
+.wishlist-info strong {
+    display: block;
+    margin-top: 5px;
+    font-size: 15px;
+    color: #c28377;
+}
+
+.wishlist-actions {
+    margin-top: 10px;
+    display: flex;
+    gap: 10px;
+}
+
+.wishlist-actions button {
+    flex: 1;
+    padding: 8px;
+    font-size: 13px;
+    border: 1px solid #ddd;
+    background: #f9f9f9;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.wishlist-actions button:hover {
+    background: #efefef;
+}
+
+/* Fix extra space from ionRangeSlider */
+.irs {
+    margin: 0 !important;
+    padding: 0 !important;
 }
