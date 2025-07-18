@@ -1,3 +1,43 @@
+const allSections = [
+    '#slider-section',
+    '#about-section',
+    '#category-section',
+    '#perfumeCarouselSection',
+    '#contact-section',
+    '#search-section',
+    '#shop-section',
+    '#wishlist-section',
+    '#cart-section',
+    '#checkout-section',
+    '#blog-section',
+    '#single-post-section'
+];
+
+function showSection(sectionId, scrollToTop = true) {
+    // Hide everything
+    $(allSections.join(',')).hide();
+
+    if (sectionId === 'home-combined') {
+        $('#slider-section, #category-section').fadeIn(300);
+        if (scrollToTop) {
+            $('html, body').animate({ scrollTop: $('#slider-section').offset().top - 60 }, 400);
+        }
+        return;
+    }
+
+    const $target = $('#' + sectionId);
+    if ($target.length) {
+        $target.fadeIn(300, function () {
+            if (scrollToTop) {
+                $('html, body').animate({
+                    scrollTop: $target.offset().top - 60
+                }, 400);
+            }
+        });
+
+    }
+}
+
 // GLOBAL CSRF setup (outside ready)
 $.ajaxSetup({
     headers: {
@@ -100,37 +140,14 @@ $(document).ready(function () {
     // toggle visibility and nav state for both Desktop and Mobile
     $('.nav-link').click(function (e) {
         e.preventDefault();
-
         const targetId = $(this).data('target');
+        if (!targetId) return;
 
-        if (!targetId) return; // Skip links without data-target
-
-        // Remove active class from all nav-links
         $('.nav-link').removeClass('active');
         $(this).addClass('active');
 
-        // Hide all main sections
-        $('#slider-section, #about-section, #category-section, #perfumeCarouselSection, #contact-section, #search-section, #shop-section').hide();
+        showSection(targetId);
 
-        if (targetId === 'home-combined') {
-            $('#slider-section, #category-section').fadeIn(300);
-        } else {
-            $('#' + targetId).fadeIn(300);
-        }
-
-        let scrollTarget = (targetId === 'home-combined') ? '#slider-section' : '#' + targetId;
-
-        $('html, body').animate({
-            scrollTop: $(scrollTarget).offset().top - 60
-        }, 400);
-
-        // Show the selected section
-        $('#' + targetId).fadeIn(300);
-
-        // Scroll to top of section (adjusted for header height)
-        scrollToSection(targetId);
-
-        // Close mobile sidebar if open
         $('#mobileSidebar').removeClass('active');
         $('#sidebarOverlay').fadeOut();
     });
@@ -216,6 +233,12 @@ $(document).ready(function () {
     // See more button click events
     $(document).off('click', '.seeMore').on('click', '.seeMore', function () {
         $('.carousel').removeClass('next prev').addClass('showDetail');
+
+        // Hide Top Bar and move header to top
+        $('#topBar').slideUp(200);
+        $('#header').css('top', '0');
+        $('#mobile-header').css('top', '0');
+        $('#logo').addClass('shrink');
     });
 
     // Back button click event
@@ -472,7 +495,7 @@ $(document).ready(function () {
 
     if ($contactMsg.length) {
         // Make sure contact section is shown
-        $('#slider-section, #about-section, #category-section, #perfumeCarouselSection').hide();
+        $('#slider-section, #about-section, #category-section, #perfumeCarouselSection, #search-section, #shop-section, #wishlist-section, #cart-section, #checkout-section, #blog-section, #single-post-section').hide();
         $('#contact-section').show();
 
         setTimeout(function () {
@@ -566,22 +589,18 @@ $(document).ready(function () {
     });
 
     $('.open-search').on('click', function () {
-        $('html, body').animate({ scrollTop: 0 }, 400);
-        // Hide all other sections
-        $('#slider-section, #about-section, #category-section, #perfumeCarouselSection, #contact-section').hide();
-
-        // Show the search section
-        $('#search-section').show();
+        showSection('search-section');
     });
 
     $('#closeSearchBtn').on('click', function () {
         $('#search-section').hide();
-        $('#slider-section, #about-section, #category-section, #perfumeCarouselSection, #contact-section').show();
+        $('#slider-section, #category-section').show();
     });
 
     $('#mobileSearchIcon').on('click', function () {
-        $('#mobileSidebar').addClass('active');
-        $('#sidebarOverlay').fadeIn(300); // show overlay
+        $('#mobileSidebar').removeClass('active');
+        $('#sidebarOverlay').fadeOut(300);
+        showSection('search-section');
     });
 
     $(document).off('click', '#mobileSearchIcon').on('click', '#mobileSearchIcon', function () {
@@ -591,19 +610,14 @@ $(document).ready(function () {
         $('#mobileSidebar').removeClass('active');
         $('#sidebarOverlay').fadeOut(300);
 
-        // Hide all sections like desktop
-        $('#slider-section, #about-section, #category-section, #perfumeCarouselSection, #contact-section').hide();
-
         if (query.length < 2) {
-            $('#search-section').show();
+            showSection('search-section');
             $('#searchResults').html('<p>Type at least 2 characters...</p>');
-            $('html, body').animate({ scrollTop: 0 }, 400);
             return;
         }
 
         // Show search result overlay
-        $('#search-section').show();
-        $('html, body').animate({ scrollTop: 0 }, 400);
+        showSection('search-section');
 
         $.get('/search-products', { q: query }, function (data) {
             if (data.length === 0) {
@@ -807,13 +821,7 @@ $(document).ready(function () {
         const isAdding = !$icon.hasClass('fas');
 
         if (!isAdding) {
-            // Just open wishlist section instead of removing
-            $('#slider-section, #about-section, #category-section, #perfumeCarouselSection, #contact-section, #shop-section, #search-section').hide();
-            $('#wishlist-section').show();
-
-            // Scroll to top for better UX
-            $('html, body').animate({ scrollTop: 0 }, 400);
-
+            showSection('wishlist-section');
             return;
         }
 
@@ -859,7 +867,6 @@ $(document).ready(function () {
         e.preventDefault();
         const $btn = $(this);
         const productId = $btn.data('id');
-        console.log("Deleting wishlist item:", productId);
 
         if (!productId) {
             alert('Error: Product ID not found.');
@@ -882,7 +889,14 @@ $(document).ready(function () {
 
                     // If no items left, show message
                     if ($('.wishlist-card').length === 0) {
-                        $('#wishlist-items').html('<p>You have no items in your wishlist.</p>');
+                        $('#wishlist-items').html(`
+                            <div class="empty-wishlist">
+                                <img src="/images/empty-cart-illustration.png" alt="Empty Wishlist Illustration" class="empty-wishlist-img">
+                                <h3>Your Wishlist is Currently Empty</h3>
+                                <p>It looks like you haven’t saved any favorites yet. Browse our products and add items to your wishlist to keep track of things you love!</p>
+                                <button onclick="showSection('shop-section')" class="browse-btn">Start Shopping</button>
+                            </div>
+                        `);
                     }
                 });
 
@@ -907,43 +921,263 @@ $(document).ready(function () {
         });
     });
 
-    // Add to Cart click
-    $(document).on('click', '.add-to-cart-btn', function (e) {
-        if (window.isLoggedIn === "true") {
+    // Add to Cart click handler
+    $(document).off('click', '.add-to-cart-btn').on('click', '.add-to-cart-btn', function (e) {
+        e.preventDefault();
+
+        const $btn = $(this);
+        const $card = $btn.closest('[data-id]');
+        const productId = $card.data('id');
+
+        if (!productId) {
+            alert('Product ID not found.');
             return;
         }
+
+        $btn.prop('disabled', true).text('Adding...');
+
+        $.ajax({
+            url: '/cart',
+            method: 'POST',
+            data: {
+                product_id: productId,
+                quantity: 1,
+                _token: $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function (response) {
+                console.log('Item added to cart', response);
+
+                // Update the count bubble
+                if (response.cartCount !== undefined) {
+                    updateCartCount(response.cartCount);
+                }
+
+                // Instead of fetching immediately, wait a moment
+                setTimeout(function () {
+                    $.get('/cart/fetch', function (html) {
+                        $('.cart-container').html(html);
+                    });
+                }, 300);
+
+                // Restore button
+                $btn.prop('disabled', false).text('Add to Cart');
+
+                // show success message
+                $btn.closest('.wishlist-card, .detail').find('.action-message').html(
+                    `<p class="success-msg">Added to cart!</p>`
+                );
+                setTimeout(() => {
+                    $('.success-msg').fadeOut(400, function () { $(this).remove(); });
+                }, 2000);
+            },
+            error: function () {
+                alert('Error adding to cart.');
+                $btn.prop('disabled', false).text('Add to Cart');
+            }
+        });
+    });
+
+    // Hide count bubbles if zero when page loads
+    $('.cart-count').each(function () {
+        const initialCount = parseInt($(this).text(), 10);
+        if (initialCount === 0) {
+            $(this).hide();
+        }
+    });
+
+    $(document).on('change', '.item-quantity input', function () {
+        const $input = $(this);
+        const newQuantity = parseInt($input.val(), 10);
+        const $row = $input.closest('.cart-item');
+        const productId = $row.data('id');
+
+        if (newQuantity < 1) {
+            alert('Quantity must be at least 1.');
+            $input.val(1);
+            return;
+        }
+
+        $.ajax({
+            url: '/cart/update', // Create this route
+            method: 'POST',
+            data: {
+                product_id: productId,
+                quantity: newQuantity,
+                _token: $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function (response) {
+                // Update subtotal for this row
+                $row.find('.item-subtotal').text(`$${parseFloat(response.rowSubtotal).toFixed(2)}`);
+
+                // Update cart totals
+                $('.cart-subtotal').text(`$${parseFloat(response.cartSubtotal).toFixed(2)}`);
+                $('.cart-total').text(`$${parseFloat(response.cartTotal).toFixed(2)}`);
+            },
+            error: function () {
+                alert('Could not update quantity.');
+            }
+        });
+    });
+
+    $(document).on('click', '.remove-item', function (e) {
         e.preventDefault();
-        const $msgContainer = $(this).closest('.detail, .shop-card').find('.action-message');
-        $msgContainer.html('<p class="login-warning">Please login to add to cart.</p>');
-        // Hide after 3 seconds
-        setTimeout(() => {
-            $msgContainer.empty();
-        }, 5000);
+
+        const $item = $(this).closest('.cart-item');
+        const productId = $item.data('id');
+
+        if (!productId) {
+            alert('Product ID missing.');
+            return;
+        }
+
+        $.ajax({
+            url: '/cart/' + productId,
+            type: 'DELETE',
+            data: {
+                _token: $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function (response) {
+                console.log('Removed:', response);
+
+                // Optionally fade out
+                $item.fadeOut(300, function () {
+                    // Remove element
+                    $(this).remove();
+
+                    // After removal, refresh cart container
+                    $.get('/cart/fetch', function (html) {
+                        $('.cart-container').html(html);
+                    });
+
+                    // Update cart counts
+                    if (response.count !== undefined) {
+                        updateCartCount(response.count);
+                    }
+                });
+            },
+            error: function () {
+                alert('Could not remove item.');
+            }
+        });
     });
 
     // Quick Buy click
     $(document).on('click', '.quick-buy-btn', function (e) {
-        if (window.isLoggedIn === "true") {
+        // Check if NOT logged in
+        if (window.isLoggedIn !== "true") {
+            e.preventDefault();
+            const $msgContainer = $(this).closest('.detail, .shop-card').find('.action-message');
+            $msgContainer.html('<p class="login-warning">Please login to proceed to quick buy.</p>');
+            // Hide after 5 seconds
+            setTimeout(() => {
+                $msgContainer.empty();
+            }, 5000);
             return;
         }
+
         e.preventDefault();
-        const $msgContainer = $(this).closest('.detail, .shop-card').find('.action-message');
-        $msgContainer.html('<p class="login-warning">Please login to proceed to quick buy.</p>');
-        // Hide after 3 seconds
-        setTimeout(() => {
-            $msgContainer.empty();
-        }, 5000);
+
+        window.quickBuyMode = true; // mark Quick Buy active
+
+        // Get quantity safely (if you have an input in carousel), else default to 1
+        const quantity = parseInt($(this).closest('.carousel-product').find('.quick-buy-quantity').val()) || 1;
+
+        const productId = $(this).data('product-id');
+        const productName = $(this).data('product-name');
+        const productPrice = $(this).data('product-price');
+        const productImage = $(this).data('product-image');
+
+        // Always set shipping to fixed $5
+        const shipping = 5.00;
+
+        // Calculate subtotal and total
+        const subtotal = (parseFloat(productPrice) * quantity).toFixed(2);
+        const grandTotal = (parseFloat(subtotal) + shipping).toFixed(2);
+
+        // Update order summary HTML
+        $('.order-summary .order-items').html(`
+            <div class="order-item" style="display:flex; align-items:center; gap:10px;">
+                <img src="${productImage}" alt="${productName}" style="width:50px;">
+                <div style="flex:1;">
+                    <strong>${productName}</strong><br>
+                    <label>
+                        Quantity:
+                        <input 
+                            type="number" 
+                            class="quick-buy-quantity-input" 
+                            value="${quantity}" 
+                            min="1" 
+                            style="border:none; background:transparent; width:50px;"
+                            data-unit-price="${productPrice}">
+                    </label><br>
+                    <span>Price: $${parseFloat(productPrice).toFixed(2)}</span>
+                </div>
+            </div>
+            <div class="order-item subtotal-quick-buy">
+                <span>Subtotal</span>
+                <span class="subtotal-amount">$${subtotal}</span>
+            </div>
+            <div class="order-item">
+                <span>Shipping</span>
+                <span class="shipping-amount">$${shipping.toFixed(2)}</span>
+            </div>
+        `);
+
+        // Immediately set the correct total
+        $('.quick-buy-grand-total').text(`$${grandTotal}`);
+
+        // Update shipping attribute in case you use it in other calculations
+        $('.order-summary').attr('data-shipping', shipping);
+
+        // Inject or update hidden input for quantity
+        if ($('input[name="quick_buy_quantity"]').length === 0) {
+            $('form').append('<input type="hidden" name="quick_buy_quantity" value="' + quantity + '">');
+        } else {
+            $('input[name="quick_buy_quantity"]').val(quantity);
+        }
+
+        // Show checkout section
+        $('.section').hide();
+        $('#checkout-section').show();
+
+        $('html, body').animate({
+            scrollTop: $("#checkout-section").offset().top
+        }, 500);
+    });
+
+    // Handle quantity change
+    $(document).on('blur', '.quick-buy-quantity-input', function () {
+        const newQty = parseInt($(this).val()) || 1;
+        const unitPrice = parseFloat($(this).data('unit-price'));
+        const newSubtotal = (unitPrice * newQty).toFixed(2);
+        const shipping = parseFloat($('.order-summary').attr('data-shipping')) || 0;
+        const newGrandTotal = (parseFloat(newSubtotal) + shipping).toFixed(2);
+
+        console.log("Quantity:", newQty);
+        console.log("Unit Price:", unitPrice);
+        console.log("New Subtotal:", newSubtotal);
+        console.log("New Grand Total:", newGrandTotal);
+
+        // Update Subtotal
+        $('.subtotal-quick-buy .subtotal-amount').text(`$${newSubtotal}`);
+
+        // Update the Total in the order summary footer
+        $('.quick-buy-grand-total').text(`$${newGrandTotal}`);
+
+        $('input[name="quick_buy_quantity"]').val(newQty);
+    });
+
+    // Attach Enter key helper
+    $('.quick-buy-quantity-input').on('keyup', function (e) {
+        if (e.key === 'Enter') {
+            $(this).blur(); // triggers blur handler above
+        }
     });
 
     // Show Wishlist Section
     $(document).on('click', '.open-wishlist', function () {
-        $('html, body').animate({ scrollTop: 0 }, 400);
-        // Hide all other sections
-        $('#slider-section, #about-section, #category-section, #perfumeCarouselSection, #shop-section, #contact-section, #search-section').hide();
-        // Show wishlist
-        $('#wishlist-section').show();
+        showSection('wishlist-section');
 
-        // Hide top bar and shrink header
         $('#topBar').slideUp(200);
         $('#header').css('top', '0');
         $('#mobile-header').css('top', '0');
@@ -952,8 +1186,7 @@ $(document).ready(function () {
 
     // Example Close Wishlist (if you want to add a close button later)
     $(document).on('click', '#closeWishlistBtn', function () {
-        $('#wishlist-section').hide();
-        $('#slider-section, #about-section, #category-section, #contact-section').show();
+        showSection('home-combined');
         $('#topBar').slideDown(200);
         $('#header').css('top', '50px');
         $('#mobile-header').css('top', '50px');
@@ -980,6 +1213,119 @@ $(document).ready(function () {
         $('.shop-products').html(sorted);
     });
 
+    // Category change
+    $('.category-filter').on('change', applyFilters);
+
+    // Price slider (assuming you’re using ionRangeSlider)
+    $('#priceRange').on('change', function (e) {
+        const data = $(this).data('ionRangeSlider');
+        $('#minPriceVal').text(`$${data.from}`);
+        $('#maxPriceVal').text(`$${data.to}`);
+        applyFilters();
+    });
+
+    // When cart icon is clicked
+    $('.icon-with-label .fa-shopping-cart, .icon-with-label .cart-label, .mobile-header .cart-icon').on('click', function (e) {
+        e.preventDefault();
+
+        // Show the section
+        showSection('cart-section');
+
+        // Fetch updated cart HTML
+        $.get('/cart/fetch', function (html) {
+            $('.cart-container').html(html);
+        });
+    });
+
+    // When mobile bottom tab cart is clicked
+    $('.mobile-bottom-tab a').on('click', function (e) {
+        if ($(this).find('.fa-shopping-cart').length) {
+            e.preventDefault();
+            showSection('cart-section');
+            $.get('/cart/fetch', function (html) {
+                $('.cart-container').html(html);
+            });
+        }
+    });
+
+    $(document).on('click', '.return-shop-btn', function () {
+        showSection('shop-section');
+    });
+
+    $(document).on('click', '.checkout-btn', function (e) {
+        e.preventDefault();
+        // Make sure Quick Buy is OFF
+        window.quickBuyMode = false;
+        showSection('checkout-section');
+        $.get('/cart/fetch-checkout', function (html) {
+            $('#checkout-section .checkout-container').html(html);
+        });
+    });
+
+    // To Toggle the Payment Info on Checkout Section
+    $(document).on('change', 'input[name="payment_method"]', function () {
+        $('.payment-info').slideUp();
+        $(this).closest('label').next('.payment-info').slideDown();
+    });
+
+    // Show Blog section
+    $(document).on('click', '.blog-icon', function (e) {
+        e.preventDefault();
+        showSection('blog-section');
+
+        $.get('/blog', function (posts) {
+            let html = '';
+            posts.forEach(post => {
+                html += `
+                <div class="blog-card" data-id="${post.id}">
+                    <img src="${post.image}" alt="${post.title}">
+                    <h3>${post.title}</h3>
+                    <p>${post.excerpt}</p>
+                    <button class="read-more-btn">Read More</button>
+                </div>
+            `;
+            });
+            $('.blog-list').html(html);
+        });
+    });
+
+    // Show Single Post
+    $(document).on('click', '.read-more-btn', function (e) {
+        e.preventDefault();
+        const postId = $(this).data('post-id');
+
+        // Fetch post data via AJAX
+        $.get(`/blog/${postId}`, function (response) {
+            // Update single post section content
+            $('.single-post-title').text(response.title);
+            $('.single-post-image').attr('src', response.cover_image);
+            $('.single-post-image').attr('alt', response.title);
+            $('.single-post-content').html(response.content);
+
+            // Hide other sections
+            $(allSections.join(',')).hide();
+
+            // Show single post section
+            $('#single-post-section').fadeIn(300, function () {
+                $('html, body').animate({
+                    scrollTop: $('#single-post-section').offset().top - 60
+                }, 400);
+            });
+        }).fail(function () {
+            alert('Sorry, something went wrong loading the post.');
+        });
+    });
+
+    // Back button
+    $(document).on('click', '.back-to-blog-btn', function () {
+        $('#single-post-section').hide();
+        $('#blog-section').show();
+
+        // Optionally scroll back to blog
+        $('html, body').animate({
+            scrollTop: $('#blog-section').offset().top
+        }, 500);
+    });
 });
 
 function adjustSliderHeight() {
@@ -1025,13 +1371,11 @@ function applyFilters() {
     });
 }
 
-// Category change
-$('.category-filter').on('change', applyFilters);
-
-// Price slider (assuming you’re using ionRangeSlider)
-$('#priceRange').on('change', function (e) {
-    const data = $(this).data('ionRangeSlider');
-    $('#minPriceVal').text(`$${data.from}`);
-    $('#maxPriceVal').text(`$${data.to}`);
-    applyFilters();
-});
+// Sets the cart count to a specific value
+function updateCartCount(count) {
+    if (count > 0) {
+        $('.cart-count').text(count).show();
+    } else {
+        $('.cart-count').hide();
+    }
+}

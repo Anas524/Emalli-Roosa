@@ -22,7 +22,7 @@
 <body>
     <div class="top-bar" id="topBar">
         <div class="top-left">
-            FREE SHIPPING FOR ALL ORDERS OF $150
+            FREE SHIPPING FOR ALL ORDERS OF $100
         </div>
         <div class="top-right">
             <a href="#" title="Facebook" class="top-social-btn"><i class="fab fa-facebook-f"></i></a>
@@ -38,7 +38,7 @@
         <div class="nav-links">
             <a href="#" class="active nav-link" data-target="home-combined">HOME</a>
             <a href="#" class="nav-link" data-target="shop-section">SHOP</a>
-            <a href="#">BLOG</a>
+            <a href="#" class="nav-link blog-icon" data-target="blog-section">BLOG</a>
             <a href="#" class="nav-link" data-target="about-section">ABOUT US</a>
             <a href="#" class="nav-link" data-target="contact-section">CONTACT US</a>
         </div>
@@ -62,8 +62,9 @@
                 <i class="far fa-heart"></i>
                 <span>Wishlist</span>
             </div>
-            <div class="icon-with-label">
+            <div class="icon-with-label cart-desktop">
                 <i class="fas fa-shopping-cart"></i>
+                <span class="cart-count" @if($globalCartCount==0) style="display:none" @endif>{{ $globalCartCount }}</span>
                 <span class="cart-label">Cart</span>
             </div>
         </div>
@@ -78,12 +79,12 @@
         <div class="header-buttons">
             <a href="#" class="cart-icon">
                 <i class="fas fa-shopping-cart"></i>
-                <span class="cart-count">0</span>
+                <span class="cart-count" @if($globalCartCount==0) style="display:none" @endif>{{ $globalCartCount }}</span>
             </a>
         </div>
     </div>
 
-    <!-- MODERN MOBILE SIDEBAR -->
+    <!-- MOBILE SIDEBAR -->
     <div class="modern-mobile-sidebar" id="mobileSidebar">
         <div class="sidebar-header">
             <input type="text" id="mobileSearchInput" class="search-input" placeholder="Search products...">
@@ -97,9 +98,9 @@
 
         <div class="sidebar-content">
             <div class="sidebar-tab-panel" id="menu-panel">
-                <a href="#" class="nav-link" data-target="slider-section"><i class="fas fa-home"></i> Home</a>
+                <a href="#" class="nav-link" data-target="home-combined"><i class="fas fa-home"></i> Home</a>
                 <a href="#" class="nav-link" data-target="shop-section"><i class="fas fa-store"></i> Shop</a>
-                <a href="#"><i class="fas fa-blog"></i> Blog</a>
+                <a href="#" class="nav-link blog-icon" data-target="blog-section"><i class="fas fa-blog"></i> Blog</a>
                 <a href="#" class="nav-link" data-target="about-section"><i class="fas fa-users"></i> About Us</a>
                 <a href="#" class="nav-link" data-target="contact-section"><i class="fas fa-envelope"></i> Contact</a>
                 <a href="#" class="open-wishlist"><i class="far fa-heart"></i> Wishlist</a>
@@ -129,7 +130,7 @@
                             blending the rich heritage of Spanish fragrances with the deep allure of oud. Each scent is
                             a masterpiece of sophistication, purity, and elegance, designed to leave a lasting
                             impression.</p>
-                        <button>Shop Now</button>
+                        <button class="nav-link" data-target="shop-section">Shop Now</button>
                     </div>
                     <div class="slide-image slide-image-1">
                         <img src="{{ asset('images/slider1.png') }}" alt="Slide 1" draggable="false">
@@ -263,7 +264,13 @@
                             <i class="{{ in_array($product->id, $wishlistIds) ? 'fas' : 'far' }} fa-heart wishlist-icon"></i>
                         </button>
                         <button class="add-to-cart-btn">ADD TO CART</button>
-                        <button class="quick-buy-btn">QUICK BUY</button>
+                        <button class="quick-buy-btn"
+                            data-product-id="{{ $product->id }}"
+                            data-product-name="{{ $product->name }}"
+                            data-product-price="{{ $product->price }}"
+                            data-product-image="{{ asset(ltrim($product->image, '/')) }}">
+                            QUICK BUY
+                        </button>
                     </div>
                     <div class="action-message"></div>
                 </div>
@@ -280,6 +287,48 @@
             </a>
         </div>
     </div>
+
+    <!-- Section-4 -->
+    <section id="blog-section">
+        <div class="blog-container">
+            @foreach($posts as $post)
+            <article class="blog-post">
+                <h2 class="blog-title">{{ $post->title }}</h2>
+                <div class="blog-meta">
+                    <span><i class="fas fa-user"></i> Admin</span>
+                    <span><i class="fas fa-calendar"></i> {{ $post->created_at->format('F d, Y') }}</span>
+                    <span><i class="fas fa-comments"></i> 0 Comments</span>
+                </div>
+                <div class="blog-image">
+                    <img src="{{ asset($post->image) }}" alt="{{ $post->title }}">
+                </div>
+                <div class="blog-excerpt">
+                    <p>{{ Str::limit(strip_tags($post->content), 200) }}</p>
+                </div>
+                <a href="#" class="read-more-btn" data-post-id="{{ $post->id }}">Continue Reading</a>
+            </article>
+            @endforeach
+
+            @if($posts->isEmpty())
+            <p>No posts found.</p>
+            @endif
+        </div>
+    </section>
+
+    <section id="single-post-section" style="display: none;">
+        <div class="single-post-container">
+            <div class="single-post-content-wrapper">
+                <div class="single-post-text">
+                    <h1 class="single-post-title"></h1>
+                    <div class="single-post-content"></div>
+                    <button class="back-to-blog-btn">← Back to Blog</button>
+                </div>
+                <div class="single-post-image-wrapper">
+                    <img class="single-post-image" src="" alt="">
+                </div>
+            </div>
+        </div>
+    </section>
 
     <section class="about-section main-section" id="about-section" style="display: none;">
         <div class="about-banner-wrapper">
@@ -361,6 +410,14 @@
 
     <section id="wishlist-section" style="display: none;">
         @include('wishlist')
+    </section>
+
+    <section id="cart-section" style="display: none;">
+        @include('cart')
+    </section>
+
+    <section id="checkout-section" style="display:none;">
+        @include('checkout')
     </section>
 
     <footer class="emalli-footer">
